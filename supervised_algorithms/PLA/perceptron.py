@@ -45,9 +45,6 @@ class Perceptron:
     def _unit_step_func(self, x):
         return np.where(x>=0, 1, 0)
 
-def my_formula(x, w):
-    return x**3+2*x-4
-
 if __name__ == "__main__":
     pla_df = pd.read_csv("Single Layer Perceptron Dataset.csv", header=0)
     features = pla_df[["Feature2", "Feature3"]]
