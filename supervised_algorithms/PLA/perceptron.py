@@ -1,8 +1,10 @@
 import numpy as np
 import matplotlib
+import matplotlib.pyplot as plt
+import mpl_toolkits.mplot3d  # noqa: F401
 import pandas as pd
 
-import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
 from numpy import random
 
 # Perceptron class
@@ -45,27 +47,63 @@ class Perceptron:
     def _unit_step_func(self, x):
         return np.where(x>=0, 1, 0)
 
-def my_formula(x, w):
-    return x**3+2*x-4
-
 if __name__ == "__main__":
-    pla_df = pd.read_csv("Single Layer Perceptron Dataset.csv", header=0)
-    features = pla_df[["Feature2", "Feature3"]]
-    labels = pla_df["Class_Label"]
-
-    pla = Perceptron(learning_rate=0.1, n_iters=1000)
-    pla.fit(features.values, labels.values)
-
-    print(pla.predict(np.array([1,1])))
-    print(pla.predict(np.array([0.4,0.2])))
-
-    fig = plt.figure(figsize=(8,8))
-
-    x = [-pla.bias/pla.weights[0], 0]
-    y = [0, -pla.bias/pla.weights[1]]
-    plt.plot(x,y)
-
-    colors = ["red", "green"]
-    plt.scatter(features.Feature2, features.Feature3, c=labels, cmap=matplotlib.colors.ListedColormap(colors))
+    pla = Perceptron(n_iters=10000)
     
-    plt.show()
+    iris = datasets.load_iris()
+    iris_df = pd.DataFrame( iris.data, columns=iris.feature_names)
+    
+    iris_df['target'] = iris.target
+    
+    # Map targets to target names
+    target_names = {
+        0:'setosa',
+        1:'versicolor',
+        2:'virginica'
+    }
+    iris_df['target_names'] = iris_df['target'].map(target_names)
+    
+    df_no_setosa = iris_df[iris_df['target'] != 1]
+    
+    X_reduced = PCA(n_components=3).fit_transform(df_no_setosa.iloc[:, 0: 4])
+    
+    df_no_setosa['PC1'] = X_reduced[:, 0]
+    df_no_setosa['PC2'] = X_reduced[:, 1]
+    df_no_setosa['PC3'] = X_reduced[:, 2]
+    
+    features = df_no_setosa[["PC1", "PC2", "PC3"]]
+    target = df_no_setosa["target"]
+    pla.fit(features.values, target.values)
+    
+    w = pla.weights
+    print(pla.weights)
+    print(pla.bias)
+    
+    a,b,c,d = w[0],w[1],w[2],pla.bias
+    
+    x = np.linspace(-1,1,10)
+    y = np.linspace(-1,1,10)
+    
+    X,Y = np.meshgrid(x,y)
+    Z = (d - a*X - b*Y) / c
+    
+    fig = plt.figure(1, figsize=(8, 6))
+    ax = fig.add_subplot(111, projection="3d", elev=-150, azim=110)
+    
+    surf = ax.plot_surface(X, Y, Z)
+    
+    ax.scatter(
+        X_reduced[:, 0],
+        X_reduced[:, 1],
+        X_reduced[:, 2],
+        c=df_no_setosa.target,
+        s=40,
+    )
+    
+    ax.set_title("First three PCA dimensions")
+    ax.set_xlabel("1st Eigenvector")
+    ax.xaxis.set_ticklabels([])
+    ax.set_ylabel("2nd Eigenvector")
+    ax.yaxis.set_ticklabels([])
+    ax.set_zlabel("3rd Eigenvector")
+    ax.zaxis.set_ticklabels([])
